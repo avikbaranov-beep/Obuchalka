@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CodeLearn — Учи программирование</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0a0a0f;--bg2:#12121a;--bg3:#1a1a26;
+  --accent:#6c63ff;--accent2:#ff6584;--accent3:#43e97b;
+  --text:#e8e8f0;--text2:#9090a8;--text3:#5a5a78;
+  --border:#2a2a3d;--card:#161622;
+  --py:#3572A5;--cs:#178600;--cpp:#f34b7d;--js:#f1e05a;--html:#e34c26;
+}
+body{background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif;min-height:100vh;overflow-x:hidden}
+button{font-family:inherit;cursor:pointer;border:none;outline:none}
+input,textarea{font-family:inherit;outline:none;border:none}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--accent);border-radius:3px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(108,99,255,.4)}50%{box-shadow:0 0 0 12px rgba(108,99,255,0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes glow{0%,100%{text-shadow:0 0 20px rgba(108,99,255,.5)}50%{text-shadow:0 0 40px rgba(108,99,255,.9),0 0 80px rgba(108,99,255,.3)}}
+.fade-in{animation:fadeIn .5s ease forwards}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback}=React;
+
+const LANGS={
+  python:{name:'Python',color:'#3572A5',icon:'🐍',desc:'Простой и мощный язык для всего',topics:[
+    {id:'p1',title:'Переменные и типы данных',theory:`Python автоматически определяет тип переменной.\n\nПримеры:\nname = "Алексей"  # строка (str)\nage = 25          # целое число (int)\nprice = 9.99      # дробное (float)\nis_cool = True    # логическое (bool)\n\nПечатаем: print(name)  →  Алексей`,task:'Создай переменную name со своим именем и age с твоим возрастом. Выведи их через print().',hint:'Используй: name = "ИМЯ" и print(name, age)',check:['name','age','print'],example:'name = "Саша"\nage = 20\nprint(name, age)'},
+    {id:'p2',title:'Условия if/else',theory:`Условия позволяют выполнять разный код в зависимости от ситуации.\n\nСинтаксис:\nif условие:\n    код_если_истина\nelse:\n    код_если_ложь\n\nПример:\nage = 18\nif age >= 18:\n    print("Взрослый")\nelse:\n    print("Ребёнок")`,task:'Напиши код: если число больше 10 — выведи "Большое", иначе — "Маленькое".',hint:'number = 15\nif number > 10:\n    print(...)',check:['if','else','print'],example:'number = 15\nif number > 10:\n    print("Большое")\nelse:\n    print("Маленькое")'},
+    {id:'p3',title:'Циклы for и while',theory:`Циклы повторяют код несколько раз.\n\nfor — для перебора:\nfor i in range(5):\n    print(i)  # 0,1,2,3,4\n\nwhile — пока условие верно:\nn = 0\nwhile n < 3:\n    print(n)\n    n += 1`,task:'Выведи числа от 1 до 5 используя цикл for.',hint:'for i in range(1, 6):\n    print(i)',check:['for','range','print'],example:'for i in range(1, 6):\n    print(i)'},
+    {id:'p4',title:'Функции',theory:`Функции — это блоки кода, которые можно вызывать много раз.\n\ndef имя_функции(параметры):\n    код\n    return результат\n\nПример:\ndef greeting(name):\n    return "Привет, " + name\n\nprint(greeting("Мир"))  →  Привет, Мир`,task:'Создай функцию add(a, b) которая возвращает сумму двух чисел. Вызови её с числами 3 и 7.',hint:'def add(a, b):\n    return a + b\nprint(add(3, 7))',check:['def','return','print'],example:'def add(a, b):\n    return a + b\nprint(add(3, 7))'},
+    {id:'p5',title:'Списки',theory:`Список хранит несколько значений в одной переменной.\n\nfruits = ["яблоко", "банан", "вишня"]\nprint(fruits[0])    # яблоко\nfruits.append("груша")  # добавить\nprint(len(fruits))  # длина списка\n\nПеребор:\nfor f in fruits:\n    print(f)`,task:'Создай список из 3 любимых чисел. Добавь ещё одно через append(). Выведи весь список.',hint:'numbers = [1, 2, 3]\nnumbers.append(4)\nprint(numbers)',check:['append','print'],example:'numbers = [7, 42, 13]\nnumbers.append(100)\nprint(numbers)'},
+  ]},
+  csharp:{name:'C#',color:'#178600',icon:'⚙️',desc:'Мощный язык от Microsoft',topics:[
+    {id:'c1',title:'Hello World и структура',theory:`Каждая C# программа начинается так:\n\nusing System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Привет мир!");\n    }\n}\n\nConsole.WriteLine — выводит текст на экран.\nclass — класс (контейнер для кода).\nMain — главная функция, с неё всё начинается.`,task:'Напиши программу которая выводит "Привет, C#!" на экран.',hint:'Console.WriteLine("Привет, C#!");',check:['Console.WriteLine','class','Main'],example:'using System;\nclass Program {\n    static void Main() {\n        Console.WriteLine("Привет, C#!");\n    }\n}'},
+    {id:'c2',title:'Переменные',theory:`В C# нужно указывать тип переменной:\n\nstring name = "Алексей";  // строка\nint age = 25;             // целое\ndouble price = 9.99;      // дробное\nbool cool = true;         // да/нет\n\nvar — автоматический тип:\nvar x = 42;  // C# сам поймёт что int\n\nВывод: Console.WriteLine(name);`,task:'Создай переменные string name и int age. Выведи их через Console.WriteLine.',hint:'string name = "Имя";\nint age = 20;\nConsole.WriteLine(name + " " + age);',check:['string','int','Console.WriteLine'],example:'string name = "Иван";\nint age = 22;\nConsole.WriteLine(name + ", " + age);'},
+    {id:'c3',title:'Условия if/else',theory:`Условия в C#:\n\nint x = 10;\nif (x > 5) {\n    Console.WriteLine("Больше 5");\n} else {\n    Console.WriteLine("Не больше 5");\n}\n\nВажно: условие в круглых скобках!\nКод в фигурных скобках { }`,task:'Если переменная score больше 50 — выведи "Победа", иначе "Поражение".',hint:'int score = 75;\nif (score > 50) {\n    Console.WriteLine("Победа");\n}',check:['if','else','Console.WriteLine'],example:'int score = 75;\nif (score > 50) {\n    Console.WriteLine("Победа");\n} else {\n    Console.WriteLine("Поражение");\n}'},
+    {id:'c4',title:'Циклы',theory:`for цикл в C#:\n\nfor (int i = 0; i < 5; i++) {\n    Console.WriteLine(i);\n}\n\nТри части:\n1. int i = 0 — начало\n2. i < 5 — условие продолжения\n3. i++ — шаг (увеличить на 1)`,task:'Выведи числа от 1 до 10 используя цикл for.',hint:'for (int i = 1; i <= 10; i++) {\n    Console.WriteLine(i);\n}',check:['for','Console.WriteLine'],example:'for (int i = 1; i <= 10; i++) {\n    Console.WriteLine(i);\n}'},
+    {id:'c5',title:'Методы',theory:`Методы (функции) в C#:\n\nstatic int Add(int a, int b) {\n    return a + b;\n}\n\nstatic — можно вызывать без объекта\nint — тип возвращаемого значения\n\nВызов: int result = Add(3, 7);`,task:'Создай метод Multiply(int a, int b) который возвращает произведение. Вызови с числами 4 и 5.',hint:'static int Multiply(int a, int b) {\n    return a * b;\n}\nConsole.WriteLine(Multiply(4, 5));',check:['static','return','Console.WriteLine'],example:'static int Multiply(int a, int b) {\n    return a * b;\n}\nConsole.WriteLine(Multiply(4, 5));'},
+  ]},
+  cpp:{name:'C++',color:'#f34b7d',icon:'⚡',desc:'Быстрый системный язык',topics:[
+    {id:'x1',title:'Hello World',theory:`C++ программа:\n\n#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Привет мир!" << endl;\n    return 0;\n}\n\n#include — подключаем библиотеку\ncout — вывод текста\n<< — оператор вывода\nendl — перенос строки`,task:'Напиши программу которая выводит "Привет, C++!"',hint:'cout << "Привет, C++!" << endl;',check:['cout','include','main'],example:'#include <iostream>\nusing namespace std;\nint main() {\n    cout << "Привет, C++!" << endl;\n    return 0;\n}'},
+    {id:'x2',title:'Переменные и типы',theory:`Типы переменных в C++:\n\nint x = 42;          // целое\ndouble pi = 3.14;    // дробное\nchar c = \'A\';         // символ\nstring s = "текст";  // строка\nbool b = true;       // да/нет\n\nВывод: cout << x << endl;`,task:'Создай int переменную с числом 100 и string с именем. Выведи оба.',hint:'int num = 100;\nstring name = "Иван";\ncout << num << " " << name;',check:['int','string','cout'],example:'int num = 100;\nstring name = "Иван";\ncout << num << " " << name << endl;'},
+    {id:'x3',title:'Условия',theory:`Условия в C++:\n\nint age = 18;\nif (age >= 18) {\n    cout << "Взрослый" << endl;\n} else {\n    cout << "Ребёнок" << endl;\n}\n\nТакже есть else if:\nif (x > 0) {...}\nelse if (x < 0) {...}\nelse {...}`,task:'Если температура больше 20 — выведи "Тепло", иначе "Холодно".',hint:'int temp = 25;\nif (temp > 20) {\n    cout << "Тепло";\n}',check:['if','else','cout'],example:'int temp = 25;\nif (temp > 20) {\n    cout << "Тепло" << endl;\n} else {\n    cout << "Холодно" << endl;\n}'},
+    {id:'x4',title:'Циклы',theory:`Цикл for в C++:\n\nfor (int i = 0; i < 5; i++) {\n    cout << i << endl;\n}\n\nЦикл while:\nint n = 0;\nwhile (n < 3) {\n    cout << n << endl;\n    n++;\n}`,task:'Выведи таблицу умножения на 3 (от 3×1 до 3×5).',hint:'for (int i = 1; i <= 5; i++) {\n    cout << "3 x " << i << " = " << 3*i;\n}',check:['for','cout'],example:'for (int i = 1; i <= 5; i++) {\n    cout << "3 x " << i << " = " << 3*i << endl;\n}'},
+    {id:'x5',title:'Функции',theory:`Функции в C++:\n\nint add(int a, int b) {\n    return a + b;\n}\n\nint main() {\n    cout << add(3, 7) << endl;  // 10\n    return 0;\n}\n\nФункция объявляется ДО main() или с прототипом.`,task:'Создай функцию square(int n) которая возвращает квадрат числа. Вызови с числом 6.',hint:'int square(int n) {\n    return n * n;\n}\ncout << square(6);',check:['int','return','cout'],example:'int square(int n) {\n    return n * n;\n}\nint main() {\n    cout << square(6) << endl;\n}'},
+  ]},
+  javascript:{name:'JavaScript',color:'#f1e05a',icon:'✨',desc:'Язык веба и всего остального',topics:[
+    {id:'j1',title:'Переменные',theory:`В JS три способа объявить переменную:\n\nlet name = "Алексей";    // можно изменить\nconst PI = 3.14;         // константа\nvar old = "старый";      // старый способ\n\nИспользуй let и const.\nconsole.log(name);  → выводит в консоль`,task:'Создай переменную let name со своим именем. Выведи через console.log().',hint:'let name = "Имя";\nconsole.log(name);',check:['let','console.log'],example:'let name = "Максим";\nconsole.log(name);'},
+    {id:'j2',title:'Условия',theory:`Условия в JavaScript:\n\nlet age = 18;\nif (age >= 18) {\n    console.log("Взрослый");\n} else {\n    console.log("Ребёнок");\n}\n\nТернарный оператор (коротко):\nlet msg = age >= 18 ? "Взрослый" : "Ребёнок";`,task:'Если число чётное — выведи "Чётное", иначе "Нечётное". (Подсказка: % 2 === 0)',hint:'let num = 4;\nif (num % 2 === 0) {\n    console.log("Чётное");\n}',check:['if','else','console.log'],example:'let num = 4;\nif (num % 2 === 0) {\n    console.log("Чётное");\n} else {\n    console.log("Нечётное");\n}'},
+    {id:'j3',title:'Функции',theory:`Функции в JS:\n\n// Обычная функция\nfunction greet(name) {\n    return "Привет, " + name;\n}\n\n// Стрелочная функция (современный стиль)\nconst greet = (name) => "Привет, " + name;\n\nconsole.log(greet("Мир")); // Привет, Мир`,task:'Создай функцию multiply(a, b) которая возвращает произведение. Выведи результат 6*7.',hint:'function multiply(a, b) {\n    return a * b;\n}\nconsole.log(multiply(6, 7));',check:['function','return','console.log'],example:'function multiply(a, b) {\n    return a * b;\n}\nconsole.log(multiply(6, 7));'},
+    {id:'j4',title:'Массивы',theory:`Массивы в JavaScript:\n\nlet fruits = ["яблоко", "банан", "вишня"];\nconsole.log(fruits[0]);        // яблоко\nfruits.push("груша");          // добавить\nfruits.pop();                  // удалить последний\nconsole.log(fruits.length);    // длина\n\nПеребор:\nfruits.forEach(f => console.log(f));`,task:'Создай массив из 3 стран. Добавь ещё одну через push(). Выведи массив.',hint:'let countries = ["Россия", "США", "Китай"];\ncountries.push("Германия");\nconsole.log(countries);',check:['push','console.log'],example:'let countries = ["Россия", "США", "Китай"];\ncountries.push("Германия");\nconsole.log(countries);'},
+    {id:'j5',title:'Объекты',theory:`Объекты хранят данные как ключ:значение:\n\nlet person = {\n    name: "Алексей",\n    age: 25,\n    greet: function() {\n        return "Привет от " + this.name;\n    }\n};\n\nconsole.log(person.name);   // Алексей\nconsole.log(person.age);    // 25\nconsole.log(person.greet()); // Привет от Алексей`,task:'Создай объект car с полями brand и year. Выведи оба поля через console.log.',hint:'let car = {\n    brand: "Toyota",\n    year: 2020\n};\nconsole.log(car.brand, car.year);',check:['brand','year','console.log'],example:'let car = {\n    brand: "Toyota",\n    year: 2020\n};\nconsole.log(car.brand, car.year);'},
+  ]},
+  html:{name:'HTML',color:'#e34c26',icon:'🌐',desc:'Язык разметки веб-страниц',topics:[
+    {id:'h1',title:'Структура HTML',theory:`Базовая структура HTML страницы:\n\n<!DOCTYPE html>\n<html>\n  <head>\n    <title>Заголовок вкладки</title>\n  </head>\n  <body>\n    Здесь содержимое страницы\n  </body>\n</html>\n\n<!DOCTYPE html> — говорит браузеру что это HTML5\n<head> — невидимая часть (мета-данные)\n<body> — всё что видит пользователь`,task:'Создай HTML страницу с заголовком вкладки "Моя страница" и текстом "Привет мир!" в теле.',hint:'<!DOCTYPE html>\n<html>\n<head><title>Моя страница</title></head>\n<body>Привет мир!</body>\n</html>',check:['DOCTYPE','html','head','body','title'],example:'<!DOCTYPE html>\n<html>\n<head>\n  <title>Моя страница</title>\n</head>\n<body>\n  Привет мир!\n</body>\n</html>'},
+    {id:'h2',title:'Заголовки и текст',theory:`Теги для текста:\n\n<h1>Главный заголовок</h1>\n<h2>Подзаголовок</h2>\n<h3>Меньший заголовок</h3>\n<p>Абзац текста</p>\n<strong>Жирный</strong>\n<em>Курсив</em>\n<br> — перенос строки\n\nh1 — h6 это заголовки разных размеров`,task:'Создай страницу с заголовком h1 "Привет" и абзацем p с любым текстом.',hint:'<h1>Привет</h1>\n<p>Любой текст здесь</p>',check:['h1','p'],example:'<h1>Привет</h1>\n<p>Это мой первый абзац на HTML!</p>'},
+    {id:'h3',title:'Ссылки и картинки',theory:`Ссылка:\n<a href="https://google.com">Текст ссылки</a>\n\nhref — адрес куда ведёт ссылка\n\nКартинка:\n<img src="photo.jpg" alt="Описание">\n\nsrc — путь к файлу картинки\nalt — текст если картинка не загрузилась\n\nТег <img> не требует закрывающего тега!`,task:'Создай ссылку на https://google.com с текстом "Google" и картинку с любым src.',hint:'<a href="https://google.com">Google</a>\n<img src="cat.jpg" alt="Кот">',check:['href','img','alt'],example:'<a href="https://google.com">Google</a>\n<br>\n<img src="photo.jpg" alt="Моё фото">'},
+    {id:'h4',title:'Списки',theory:`Маркированный список (с точками):\n<ul>\n  <li>Пункт 1</li>\n  <li>Пункт 2</li>\n</ul>\n\nНумерованный список:\n<ol>\n  <li>Первый</li>\n  <li>Второй</li>\n</ol>\n\nul = unordered list (без порядка)\nol = ordered list (по порядку)\nli = list item (элемент списка)`,task:'Создай маркированный список ul с 3 любимыми едами.',hint:'<ul>\n  <li>Пицца</li>\n  <li>Суши</li>\n  <li>Бургер</li>\n</ul>',check:['ul','li'],example:'<ul>\n  <li>Пицца</li>\n  <li>Суши</li>\n  <li>Борщ</li>\n</ul>'},
+    {id:'h5',title:'Div и CSS стили',theory:`<div> — контейнер для группировки:\n\n<div style="color: red;">Красный текст</div>\n\nCSS стили через атрибут style:\n- color — цвет текста\n- background — фон\n- font-size — размер шрифта\n- padding — отступ внутри\n- border — рамка\n\nПример:\n<div style="background:blue;color:white;padding:10px">Привет!</div>`,task:'Создай div с фоном #6c63ff, белым текстом и padding 20px. Напиши внутри "CodeLearn".',hint:'<div style="background:#6c63ff;color:white;padding:20px">CodeLearn</div>',check:['div','style'],example:'<div style="background:#6c63ff;color:white;padding:20px;font-size:24px">\n  CodeLearn\n</div>'},
+  ]}
+};
+
+function App(){
+  const [screen,setScreen]=useState('loading');
+  const [user,setUser]=useState(null);
+  const [progress,setProgress]=useState({});
+  const [currentLang,setCurrentLang]=useState(null);
+  const [currentTopic,setCurrentTopic]=useState(null);
+  const [view,setView]=useState('langs');// langs|topics|lesson
+  const [authTab,setAuthTab]=useState('login');
+
+  useEffect(()=>{
+    setTimeout(()=>{
+      const u=localStorage.getItem('cl_user');
+      const p=localStorage.getItem('cl_progress');
+      if(u){setUser(JSON.parse(u));setProgress(p?JSON.parse(p):{});setScreen('app');}
+      else setScreen('auth');
+    },1800);
+  },[]);
+
+  const saveProgress=(key,val)=>{
+    const np={...progress,[key]:val};
+    setProgress(np);
+    localStorage.setItem('cl_progress',JSON.stringify(np));
+    localStorage.setItem('cl_last',JSON.stringify({lang:currentLang,topic:currentTopic,time:Date.now()}));
+  };
+
+  const login=(name,pass)=>{
+    const users=JSON.parse(localStorage.getItem('cl_users')||'{}');
+    if(!users[name]){return 'Пользователь не найден';}
+    if(users[name].pass!==pass){return 'Неверный пароль';}
+    const u={name,joined:users[name].joined};
+    setUser(u);localStorage.setItem('cl_user',JSON.stringify(u));
+    const p=JSON.parse(localStorage.getItem('cl_progress_'+name)||'{}');
+    setProgress(p);setScreen('app');return null;
+  };
+  const register=(name,pass)=>{
+    if(name.length<3)return 'Имя минимум 3 символа';
+    if(pass.length<4)return 'Пароль минимум 4 символа';
+    const users=JSON.parse(localStorage.getItem('cl_users')||'{}');
+    if(users[name])return 'Имя занято';
+    users[name]={pass,joined:Date.now()};
+    localStorage.setItem('cl_users',JSON.stringify(users));
+    const u={name,joined:Date.now()};
+    setUser(u);localStorage.setItem('cl_user',JSON.stringify(u));
+    setProgress({});setScreen('app');return null;
+  };
+  const logout=()=>{
+    if(user)localStorage.setItem('cl_progress_'+user.name,JSON.stringify(progress));
+    localStorage.removeItem('cl_user');setUser(null);setScreen('auth');
+  };
+
+  const getLangProgress=(langKey)=>{
+    const topics=LANGS[langKey].topics;
+    const done=topics.filter(t=>progress[t.id]==='done').length;
+    return Math.round((done/topics.length)*100);
+  };
+  const getTotalProgress=()=>{
+    const keys=Object.keys(LANGS);
+    return Math.round(keys.reduce((s,k)=>s+getLangProgress(k),0)/keys.length);
+  };
+
+  const openLesson=(lang,topic)=>{
+    setCurrentLang(lang);setCurrentTopic(topic);setView('lesson');
+  };
+
+  if(screen==='loading')return<Loading/>;
+  if(screen==='auth')return<Auth tab={authTab} setTab={setAuthTab} login={login} register={register}/>;
+  return<Main user={user} logout={logout} view={view} setView={setView}
+    currentLang={currentLang} setCurrentLang={setCurrentLang}
+    currentTopic={currentTopic} openLesson={openLesson}
+    progress={progress} saveProgress={saveProgress}
+    getLangProgress={getLangProgress} getTotalProgress={getTotalProgress}/>;
+}
+
+function Loading(){
+  return(
+    <div style={{height:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24}}>
+      <div style={{fontSize:64,animation:'float 2s ease-in-out infinite'}}>{'</>'}</div>
+      <div style={{fontSize:32,fontWeight:700,animation:'glow 2s ease-in-out infinite',background:'linear-gradient(135deg,#6c63ff,#ff6584)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>CodeLearn</div>
+      <div style={{width:200,height:3,background:'var(--bg3)',borderRadius:2,overflow:'hidden',marginTop:8}}>
+        <div style={{height:'100%',background:'linear-gradient(90deg,#6c63ff,#ff6584)',borderRadius:2,animation:'loadBar 1.5s ease-in-out forwards'}}/>
+      </div>
+      <style>{`@keyframes loadBar{from{width:0}to{width:100%}}`}</style>
+    </div>
+  );
+}
+
+function Auth({tab,setTab,login,register}){
+  const [name,setName]=useState('');
+  const [pass,setPass]=useState('');
+  const [err,setErr]=useState('');
+  const [ok,setOk]=useState(false);
+
+  const submit=()=>{
+    setErr('');
+    const res=tab==='login'?login(name,pass):register(name,pass);
+    if(res)setErr(res);else setOk(true);
+  };
+
+  return(
+    <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+      <div style={{position:'fixed',inset:0,overflow:'hidden',zIndex:0}}>
+        {[...Array(6)].map((_,i)=>(
+          <div key={i} style={{
+            position:'absolute',width:300+i*100,height:300+i*100,
+            borderRadius:'50%',border:'1px solid rgba(108,99,255,.15)',
+            top:'50%',left:'50%',transform:'translate(-50%,-50%)',
+            animation:`spin ${20+i*5}s linear infinite ${i%2?'reverse':''}`
+          }}/>
+        ))}
+      </div>
+      <div className="fade-in" style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:24,padding:48,width:'100%',maxWidth:420,position:'relative',zIndex:1}}>
+        <div style={{textAlign:'center',marginBottom:32}}>
+          <div style={{fontSize:48,marginBottom:12}}>{'</>'}</div>
+          <h1 style={{fontSize:28,fontWeight:700,background:'linear-gradient(135deg,#6c63ff,#ff6584)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>CodeLearn</h1>
+          <p style={{color:'var(--text2)',marginTop:8}}>Учись программировать</p>
+        </div>
+        <div style={{display:'flex',gap:8,marginBottom:28,background:'var(--bg3)',borderRadius:12,padding:4}}>
+          {['login','register'].map(t=>(
+            <button key={t} onClick={()=>{setTab(t);setErr('');}} style={{
+              flex:1,padding:'10px 0',borderRadius:9,fontSize:14,fontWeight:600,
+              background:tab===t?'var(--accent)':'transparent',
+              color:tab===t?'#fff':'var(--text2)',transition:'all .3s'
+            }}>{t==='login'?'Войти':'Регистрация'}</button>
+          ))}
+        </div>
+        <div style={{display:'flex',flexDirection:'column',gap:14}}>
+          <input value={name} onChange={e=>setName(e.target.value)} placeholder="Имя пользователя"
+            style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:12,padding:'14px 18px',color:'var(--text)',fontSize:15,width:'100%'}}/>
+          <input value={pass} onChange={e=>setPass(e.target.value)} type="password" placeholder="Пароль"
+            onKeyDown={e=>e.key==='Enter'&&submit()}
+            style={{background:'var(--bg3)',border:'1px solid var(--border)',borderRadius:12,padding:'14px 18px',color:'var(--text)',fontSize:15,width:'100%'}}/>
+          {err&&<div style={{color:'#ff6584',fontSize:13,padding:'10px 14px',background:'rgba(255,101,132,.1)',borderRadius:8}}>{err}</div>}
+          <button onClick={submit} style={{
+            background:'linear-gradient(135deg,#6c63ff,#8b83ff)',color:'#fff',
+            padding:'15px',borderRadius:12,fontSize:16,fontWeight:700,
+            transition:'transform .2s',marginTop:4
+          }} onMouseEnter={e=>e.target.style.transform='scale(1.02)'} onMouseLeave={e=>e.target.style.transform='scale(1)'}>
+            {tab==='login'?'Войти 🚀':'Создать аккаунт ✨'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Main({user,logout,view,setView,currentLang,setCurrentLang,currentTopic,openLesson,progress,saveProgress,getLangProgress,getTotalProgress}){
+  const last=JSON.parse(localStorage.getItem('cl_last')||'null');
+  const total=getTotalProgress();
+
+  return(
+    <div style={{minHeight:'100vh',display:'flex',flexDirection:'column'}}>
+      {/* Navbar */}
+      <nav style={{background:'var(--bg2)',borderBottom:'1px solid var(--border)',padding:'0 24px',height:64,display:'flex',alignItems:'center',justifyContent:'space-between',position:'sticky',top:0,zIndex:100}}>
+        <button onClick={()=>{setView('langs');}} style={{background:'none',display:'flex',alignItems:'center',gap:10,color:'var(--text)'}}>
+          <span style={{fontSize:22,fontWeight:700}}>{'</>'}</span>
+          <span style={{fontSize:18,fontWeight:700,background:'linear-gradient(135deg,#6c63ff,#ff6584)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent'}}>CodeLearn</span>
+        </button>
+        <div style={{display:'flex',alignItems:'center',gap:16}}>
+          <div style={{textAlign:'right'}}>
+            <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>👤 {user.name}</div>
+            <div style={{fontSize:11,color:'var(--accent)'}}>Прогресс: {total}%</div>
+          </div>
+          <button onClick={logout} style={{background:'var(--bg3)',color:'var(--text2)',padding:'8px 16px',borderRadius:8,fontSize:13,border:'1px solid var(--border)'}}>Выйти</button>
+        </div>
+      </nav>
+
+      <div style={{flex:1,maxWidth:1100,width:'100%',margin:'0 auto',padding:'32px 24px'}}>
+        {view==='langs'&&<LangsView last={last} getLangProgress={getLangProgress} total={total}
+          setCurrentLang={setCurrentLang} setView={setView} user={user} progress={progress}/>}
+        {view==='topics'&&<TopicsView lang={currentLang} progress={progress} openLesson={openLesson} setView={setView}/>}
+        {view==='lesson'&&<LessonView lang={currentLang} topic={currentTopic} progress={progress}
+          saveProgress={saveProgress} setView={setView} openLesson={openLesson}/>}
+      </div>
+    </div>
+  );
+}
+
+function LangsView({last,getLangProgress,total,setCurrentLang,setView,user,progress}){
+  const lastTopic=last?Object.values(LANGS).flatMap(l=>l.topics).find(t=>t.id===last.topic?.id):null;
+  return(
+    <div className="fade-in">
+      {/* Приветствие */}
+      <div style={{background:'linear-gradient(135deg,rgba(108,99,255,.15),rgba(255,101,132,.1))',border:'1px solid rgba(108,99,255,.3)',borderRadius:20,padding:32,marginBottom:32}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',flexWrap:'wrap',gap:16}}>
+          <div>
+            <h2 style={{fontSize:26,fontWeight:700}}>Привет, {user.name}! 👋</h2>
+            <p style={{color:'var(--text2)',marginTop:6}}>Продолжай учиться — ты уже прошёл {total}% всего курса!</p>
+            {last&&<p style={{color:'var(--accent)',marginTop:8,fontSize:14}}>
+              🕐 Последнее: {LANGS[last.lang]?.name} — {last.topic?.title}
+            </p>}
+          </div>
+          <div style={{textAlign:'center'}}>
+            <ProgressRing pct={total} size={100} color='#6c63ff'/>
+            <div style={{fontSize:12,color:'var(--text2)',marginTop:6}}>Общий прогресс</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 style={{fontSize:20,fontWeight:700,marginBottom:20}}>Выбери язык</h3>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(300px,1fr))',gap:20}}>
+        {Object.entries(LANGS).map(([key,lang])=>{
+          const pct=getLangProgress(key);
+          return(
+            <div key={key} onClick={()=>{setCurrentLang(key);setView('topics');}}
+              style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:20,padding:28,cursor:'pointer',
+                transition:'all .3s',position:'relative',overflow:'hidden'}}
+              onMouseEnter={e=>{e.currentTarget.style.transform='translateY(-4px)';e.currentTarget.style.borderColor=lang.color;e.currentTarget.style.boxShadow=`0 12px 40px ${lang.color}22`;}}
+              onMouseLeave={e=>{e.currentTarget.style.transform='';e.currentTarget.style.borderColor='var(--border)';e.currentTarget.style.boxShadow='';}}>
+              <div style={{position:'absolute',top:0,left:0,right:0,height:3,background:`linear-gradient(90deg,${lang.color},transparent)`,width:`${pct}%`}}/>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
+                <div>
+                  <span style={{fontSize:36}}>{lang.icon}</span>
+                  <h3 style={{fontSize:22,fontWeight:700,marginTop:8}}>{lang.name}</h3>
+                  <p style={{color:'var(--text2)',fontSize:14,marginTop:4}}>{lang.desc}</p>
+                </div>
+                <ProgressRing pct={pct} size={64} color={lang.color}/>
+              </div>
+              <div style={{marginTop:16}}>
+                <div style={{display:'flex',justifyContent:'space-between',fontSize:12,color:'var(--text2)',marginBottom:6}}>
+                  <span>{lang.topics.filter(t=>progress[t.id]==='done').length}/{lang.topics.length} тем</span>
+                  <span>{pct}%</span>
+                </div>
+                <div style={{height:4,background:'var(--bg3)',borderRadius:2}}>
+                  <div style={{height:'100%',width:`${pct}%`,background:lang.color,borderRadius:2,transition:'width .5s'}}/>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function ProgressRing({pct,size,color}){
+  const r=size/2-8;const circ=2*Math.PI*r;
+  return(
+    <svg width={size} height={size} style={{flexShrink:0}}>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--bg3)" strokeWidth={5}/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={5}
+        strokeDasharray={circ} strokeDashoffset={circ-(pct/100)*circ}
+        strokeLinecap="round" transform={`rotate(-90 ${size/2} ${size/2})`}
+        style={{transition:'stroke-dashoffset .5s'}}/>
+      <text x={size/2} y={size/2+5} textAnchor="middle" fill={color} fontSize={size<80?13:16} fontWeight={700} fontFamily="Space Grotesk">{pct}%</text>
+    </svg>
+  );
+}
+
+function TopicsView({lang,progress,openLesson,setView}){
+  if(!lang)return null;
+  const L=LANGS[lang];
+  return(
+    <div className="fade-in">
+      <button onClick={()=>setView('langs')} style={{background:'none',color:'var(--text2)',fontSize:14,marginBottom:20,display:'flex',alignItems:'center',gap:6}}>
+        ← Все языки
+      </button>
+      <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:32}}>
+        <span style={{fontSize:48}}>{L.icon}</span>
+        <div>
+          <h2 style={{fontSize:28,fontWeight:700}}>{L.name}</h2>
+          <p style={{color:'var(--text2)'}}>5 тем — изучай по порядку</p>
+        </div>
+      </div>
+      <div style={{display:'flex',flexDirection:'column',gap:14}}>
+        {L.topics.map((topic,i)=>{
+          const done=progress[topic.id]==='done';
+          const prev=i===0||progress[L.topics[i-1].id]==='done';
+          return(
+            <div key={topic.id} onClick={()=>prev&&openLesson(lang,topic)}
+              style={{background:'var(--card)',border:`1px solid ${done?L.color:'var(--border)'}`,borderRadius:16,padding:22,
+                cursor:prev?'pointer':'default',opacity:prev?1:.5,transition:'all .3s',position:'relative',
+                display:'flex',alignItems:'center',gap:20}}
+              onMouseEnter={e=>prev&&(e.currentTarget.style.transform='translateX(6px)')}
+              onMouseLeave={e=>{e.currentTarget.style.transform=''}}>
+              <div style={{width:44,height:44,borderRadius:'50%',
+                background:done?L.color:prev?'var(--bg3)':'var(--bg3)',
+                display:'flex',alignItems:'center',justifyContent:'center',
+                fontSize:18,fontWeight:700,color:done?'#fff':'var(--text2)',flexShrink:0}}>
+                {done?'✓':i+1}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontWeight:600,fontSize:16}}>{topic.title}</div>
+                <div style={{color:'var(--text2)',fontSize:13,marginTop:4}}>
+                  {done?'✅ Выполнено':prev?'👉 Нажми чтобы начать':'🔒 Сначала пройди предыдущую тему'}
+                </div>
+              </div>
+              {done&&<span style={{color:L.color,fontSize:22}}>⭐</span>}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function LessonView({lang,topic,progress,saveProgress,setView,openLesson}){
+  const [tab,setTab]=useState('theory');// theory|task
+  const [code,setCode]=useState('');
+  const [result,setResult]=useState(null);
+  const [showHint,setShowHint]=useState(false);
+  const [showAnswer,setShowAnswer]=useState(false);
+  const L=LANGS[lang];
+  const done=progress[topic.id]==='done';
+  const topics=L.topics;
+  const idx=topics.findIndex(t=>t.id===topic.id);
+  const next=topics[idx+1];
+
+  useEffect(()=>{setTab('theory');setCode('');setResult(null);setShowHint(false);setShowAnswer(false);},[topic.id]);
+
+  const check=()=>{
+    const checks=topic.check;
+    const missing=checks.filter(c=>!code.toLowerCase().includes(c.toLowerCase()));
+    if(missing.length===0){
+      setResult({ok:true,msg:'✅ Отлично! Ты справился с заданием!'});
+      saveProgress(topic.id,'done');
+    } else {
+      setResult({ok:false,msg:`❌ Не хватает: ${missing.join(', ')}`,tip:`Подсказка: убедись что используешь ${missing[0]}`});
+    }
+  };
+
+  return(
+    <div className="fade-in">
+      <button onClick={()=>setView('topics')} style={{background:'none',color:'var(--text2)',fontSize:14,marginBottom:20,display:'flex',alignItems:'center',gap:6}}>
+        ← {L.name}
+      </button>
+      <div style={{display:'flex',alignItems:'center',gap:12,marginBottom:24}}>
+        <span style={{fontSize:32}}>{L.icon}</span>
+        <div>
+          <div style={{fontSize:12,color:L.color,fontWeight:600,textTransform:'uppercase',letterSpacing:1}}>{L.name} · Тема {idx+1} из {topics.length}</div>
+          <h2 style={{fontSize:22,fontWeight:700}}>{topic.title}</h2>
+        </div>
+        {done&&<span style={{marginLeft:'auto',fontSize:24}}>⭐</span>}
+      </div>
+
+      {/* Tabs */}
+      <div style={{display:'flex',gap:8,marginBottom:24,background:'var(--bg2)',borderRadius:12,padding:4,width:'fit-content'}}>
+        {['theory','task'].map(t=>(
+          <button key={t} onClick={()=>setTab(t)} style={{
+            padding:'10px 24px',borderRadius:9,fontSize:14,fontWeight:600,
+            background:tab===t?L.color:'transparent',
+            color:tab===t?'#fff':'var(--text2)',transition:'all .3s'
+          }}>{t==='theory'?'📖 Теория':'✏️ Задание'}</button>
+        ))}
+      </div>
+
+      {tab==='theory'&&(
+        <div style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:20,padding:32}}>
+          <pre style={{fontFamily:"'JetBrains Mono',monospace",fontSize:14,lineHeight:1.8,color:'var(--text)',whiteSpace:'pre-wrap',wordBreak:'break-word'}}>{topic.theory}</pre>
+          <button onClick={()=>setTab('task')} style={{
+            marginTop:28,background:`linear-gradient(135deg,${L.color},${L.color}bb)`,
+            color:'#fff',padding:'14px 32px',borderRadius:12,fontSize:15,fontWeight:700,
+            transition:'transform .2s'
+          }} onMouseEnter={e=>e.target.style.transform='scale(1.03)'} onMouseLeave={e=>e.target.style.transform=''}>
+            Перейти к заданию →
+          </button>
+        </div>
+      )}
+
+      {tab==='task'&&(
+        <div>
+          <div style={{background:'var(--card)',border:'1px solid var(--border)',borderRadius:20,padding:28,marginBottom:20}}>
+            <h3 style={{fontSize:16,fontWeight:700,marginBottom:12}}>📝 Задание</h3>
+            <p style={{color:'var(--text)',lineHeight:1.7,fontSize:15}}>{topic.task}</p>
+          </div>
+
+          <div style={{background:'var(--bg2)',border:'1px solid var(--border)',borderRadius:20,overflow:'hidden',marginBottom:16}}>
+            <div style={{background:'var(--bg3)',padding:'10px 20px',display:'flex',alignItems:'center',gap:8}}>
+              <div style={{width:12,height:12,borderRadius:'50%',background:'#ff5f57'}}/>
+              <div style={{width:12,height:12,borderRadius:'50%',background:'#febc2e'}}/>
+              <div style={{width:12,height:12,borderRadius:'50%',background:'#28c840'}}/>
+              <span style={{marginLeft:8,fontSize:12,color:'var(--text2)',fontFamily:'JetBrains Mono'}}>editor.{lang==='html'?'html':lang==='javascript'?'js':lang==='python'?'py':lang==='cpp'?'cpp':'cs'}</span>
+            </div>
+            <textarea value={code} onChange={e=>setCode(e.target.value)}
+              placeholder="// Напиши свой код здесь..."
+              style={{width:'100%',minHeight:180,background:'transparent',color:'var(--text)',
+                fontFamily:"'JetBrains Mono',monospace",fontSize:14,lineHeight:1.7,
+                padding:'20px',resize:'vertical',border:'none'}}/>
+          </div>
+
+          <div style={{display:'flex',gap:12,flexWrap:'wrap',marginBottom:16}}>
+            <button onClick={check} style={{
+              background:`linear-gradient(135deg,${L.color},${L.color}bb)`,color:'#fff',
+              padding:'13px 28px',borderRadius:12,fontSize:15,fontWeight:700,flex:1,
+              transition:'transform .2s'
+            }} onMouseEnter={e=>e.target.style.transform='scale(1.02)'} onMouseLeave={e=>e.target.style.transform=''}>
+              ▶ Проверить
+            </button>
+            <button onClick={()=>setShowHint(!showHint)} style={{
+              background:'var(--bg3)',color:'var(--text2)',padding:'13px 20px',
+              borderRadius:12,fontSize:14,fontWeight:600,border:'1px solid var(--border)'
+            }}>💡 Подсказка</button>
+            <button onClick={()=>setShowAnswer(!showAnswer)} style={{
+              background:'var(--bg3)',color:'var(--text2)',padding:'13px 20px',
+              borderRadius:12,fontSize:14,fontWeight:600,border:'1px solid var(--border)'
+            }}>👁 Ответ</button>
+          </div>
+
+          {showHint&&(
+            <div style={{background:'rgba(108,99,255,.1)',border:'1px solid rgba(108,99,255,.3)',borderRadius:14,padding:18,marginBottom:12}}>
+              <div style={{fontWeight:700,color:'#6c63ff',marginBottom:8}}>💡 Подсказка</div>
+              <pre style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,color:'var(--text)',whiteSpace:'pre-wrap'}}>{topic.hint}</pre>
+            </div>
+          )}
+          {showAnswer&&(
+            <div style={{background:'rgba(67,233,123,.08)',border:'1px solid rgba(67,233,123,.3)',borderRadius:14,padding:18,marginBottom:12}}>
+              <div style={{fontWeight:700,color:'#43e97b',marginBottom:8}}>✅ Пример ответа</div>
+              <pre style={{fontFamily:"'JetBrains Mono',monospace",fontSize:13,color:'var(--text)',whiteSpace:'pre-wrap'}}>{topic.example}</pre>
+            </div>
+          )}
+
+          {result&&(
+            <div style={{
+              background:result.ok?'rgba(67,233,123,.1)':'rgba(255,101,132,.1)',
+              border:`1px solid ${result.ok?'rgba(67,233,123,.4)':'rgba(255,101,132,.4)'}`,
+              borderRadius:14,padding:20,marginBottom:12,animation:'fadeIn .3s ease'
+            }}>
+              <div style={{fontWeight:700,fontSize:16,color:result.ok?'#43e97b':'#ff6584',marginBottom:result.tip?8:0}}>{result.msg}</div>
+              {result.tip&&<div style={{fontSize:13,color:'var(--text2)'}}>{result.tip}</div>}
+            </div>
+          )}
+
+          {done&&next&&(
+            <button onClick={()=>openLesson(lang,next)} style={{
+              width:'100%',background:'linear-gradient(135deg,#6c63ff,#8b83ff)',
+              color:'#fff',padding:'16px',borderRadius:14,fontSize:16,fontWeight:700,
+              marginTop:8,transition:'transform .2s'
+            }} onMouseEnter={e=>e.target.style.transform='scale(1.02)'} onMouseLeave={e=>e.target.style.transform=''}>
+              Следующая тема: {next.title} →
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
